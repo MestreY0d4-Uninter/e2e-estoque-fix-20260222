@@ -1,0 +1,14 @@
+name: e2e-estoque-fix-20260222
+
+services:
+  app:
+    build:
+      context: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DB_PATH=/data/app.db
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
