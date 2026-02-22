@@ -2,6 +2,8 @@
 
 Aplicação web simples (em português), rodando via **Docker Compose**, com persistência em **SQLite**.
 
+> V1 (escopo): página inicial simples confirmando que o sistema está no ar + exemplo mínimo de persistência no SQLite.
+
 ## Requisitos
 
 - Docker + Docker Compose (plugin `docker compose`)
@@ -18,19 +20,11 @@ Acesse:
 
 - http://localhost:3000
 
-### Produtos (V1)
+Para parar:
 
-- Listagem + busca/filtros: http://localhost:3000/produtos
-- Criar produto: botão **"Novo produto"**
-- A listagem indica **"estoque baixo"** quando `quantidade <= estoque mínimo`
-
-API JSON (básica):
-
-- `GET /api/produtos?q=&categoria=&fornecedor=`
-- `GET /api/produtos/:id`
-- `POST /api/produtos`
-- `PUT /api/produtos/:id`
-- `DELETE /api/produtos/:id`
+```bash
+docker compose down
+```
 
 ## Persistência (SQLite)
 
@@ -45,9 +39,9 @@ Isso garante que o banco persista ao reiniciar os containers.
 ### Como validar rapidamente
 
 1. Suba o app: `docker compose up --build`
-2. Abra http://localhost:3000/produtos e cadastre alguns produtos
+2. Abra http://localhost:3000 e clique em **"Incrementar"** algumas vezes (o número de **"Visitas persistidas"** deve aumentar)
 3. Pare e suba novamente: `docker compose down` e depois `docker compose up`
-4. Os produtos cadastrados devem permanecer
+4. O valor de **"Visitas persistidas"** deve permanecer
 
 ## Backup
 
