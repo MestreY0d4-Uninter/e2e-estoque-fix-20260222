@@ -9,7 +9,7 @@ if command -v docker >/dev/null 2>&1; then
   docker compose run --rm app python -m ruff format --check /app
   docker compose run --rm app python -m ruff check /app
   docker compose run --rm app python -m mypy /app
-  docker compose run --rm app python -m pytest -q /app
+  docker compose run --rm app python -m pytest -q --cov=/app --cov-report=term-missing /app
   exit 0
 fi
 
@@ -22,7 +22,7 @@ if python -c "import pip" >/dev/null 2>&1; then
   python -m ruff format --check .
   python -m ruff check .
   python -m mypy .
-  DB_PATH="$LOCAL_DB_PATH" python -m pytest
+  DB_PATH="$LOCAL_DB_PATH" python -m pytest -q --cov=app --cov-report=term-missing
   exit 0
 fi
 
@@ -35,7 +35,7 @@ if command -v uv >/dev/null 2>&1; then
   uv run ruff format --check .
   uv run ruff check .
   uv run mypy .
-  DB_PATH="$LOCAL_DB_PATH" uv run pytest -q
+  DB_PATH="$LOCAL_DB_PATH" uv run pytest -q --cov=app --cov-report=term-missing
   exit 0
 fi
 
