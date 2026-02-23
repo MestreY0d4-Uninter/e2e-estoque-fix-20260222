@@ -21,6 +21,7 @@ Acesse:
 - http://localhost:3000 (início)
 - http://localhost:3000/produtos (cadastro/listagem de produtos)
 - http://localhost:3000/movimentacoes (histórico de movimentações)
+- http://localhost:3000/csv (importar/exportar CSV)
 
 Para parar:
 
@@ -54,3 +55,37 @@ cp ./data/app.db ./backup-app.db
 ```
 
 > Dica: pare os containers (`docker compose down`) antes de copiar o arquivo para um backup mais consistente.
+
+## CSV (importar/exportar)
+
+Acesse a tela de CSV em:
+
+- http://localhost:3000/csv
+
+### Template de produtos
+
+Baixe um template com as colunas esperadas:
+
+- `GET /csv/template/produtos.csv`
+
+Colunas (produtos):
+
+- `sku` (obrigatório)
+- `nome` (obrigatório)
+- `categoria`
+- `fornecedor`
+- `custo`
+- `preco`
+- `quantidade_atual`
+- `estoque_minimo`
+
+### Importação de produtos
+
+- Cria um novo produto quando o `sku` ainda não existe
+- Atualiza o produto quando o `sku` já existe
+- Relata erros por linha (ex.: campos obrigatórios ausentes ou números inválidos) sem derrubar a aplicação
+
+### Exportação
+
+- Produtos: `GET /csv/export/produtos.csv`
+- Movimentações (opcional): `GET /csv/export/movimentacoes.csv`
