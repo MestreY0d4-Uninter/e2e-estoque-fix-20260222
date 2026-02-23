@@ -221,6 +221,8 @@ def register_products_routes(app: Flask, *, db_path: str, base_style: str) -> No
       <div class="row">
         <a class="btn" href="{{ url_for('produtos_list') }}">Voltar</a>
         <a class="btn" href="{{ url_for('produtos_edit', produto_id=produto.id) }}">Editar</a>
+        <a class="btn" href="{{ url_for('movimentacoes_por_produto', produto_id=produto.id) }}">Movimentações</a>
+        <a class="btn" href="{{ url_for('movimentacoes_new', produto_id=produto.id) }}">Nova movimentação</a>
       </div>
 
       <h1>{{ produto.nome }}</h1>
@@ -231,6 +233,9 @@ def register_products_routes(app: Flask, *, db_path: str, base_style: str) -> No
       <p><strong>Preço:</strong> {{ produto.preco }}</p>
       <p><strong>Quantidade atual:</strong> {{ produto.quantidade_atual }}</p>
       <p><strong>Estoque mínimo:</strong> {{ produto.estoque_minimo }}</p>
+
+      <p><strong>Última entrada:</strong> {{ ultima_entrada or '-' }}</p>
+      <p><strong>Última saída:</strong> {{ ultima_saida or '-' }}</p>
 
       {% if low_stock %}
         <div class="error">Este produto está com <strong>estoque baixo</strong> (quantidade <= estoque mínimo).</div>
@@ -382,11 +387,40 @@ def register_products_routes(app: Flask, *, db_path: str, base_style: str) -> No
             return redirect(url_for("produtos_list", err="Produto não encontrado."))
 
         low_stock = int(produto["quantidade_atual"]) <= int(produto["estoque_minimo"])
+
+        ultima_entrada = query_one(
+            """
+            SELECT criado_em, quantidade
+            FROM movimentacoes
+            WHERE produto_id=? AND tipo='entrada'
+            ORDER BY criado_em DESC, id DESC
+            LIMIT 1
+            """,
+            (produto_id,),
+        )
+        ultima_saida = query_one(
+            """
+            SELECT criado_em, quantidade
+            FROM movimentacoes
+            WHERE produto_id=? AND tipo='saida'
+            ORDER BY criado_em DESC, id DESC
+            LIMIT 1
+            """,
+            (produto_id,),
+        )
+
+        def fmt(row):
+            if not row:
+                return None
+            return f"{row['criado_em']} (qtd {row['quantidade']})"
+
         return render_template_string(
             detail_template,
             base_style=base_style,
             produto=dict(produto),
             low_stock=low_stock,
+            ultima_entrada=fmt(ultima_entrada),
+            ultima_saida=fmt(ultima_saida),
         )
 
     @app.get("/produtos/<int:produto_id>/editar")

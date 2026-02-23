@@ -4,6 +4,7 @@ from contextlib import closing
 
 from flask import Flask, redirect, render_template_string, url_for
 
+from movements_ui import register_movements_routes
 from products_ui import register_products_routes
 
 
@@ -50,6 +51,7 @@ def create_app() -> Flask:
 
       <div class="row">
         <a class="btn" href="{{ url_for('produtos_list') }}">Produtos</a>
+        <a class="btn" href="{{ url_for('movimentacoes_list') }}">Movimentações</a>
         <a class="btn" href="{{ url_for('incrementar') }}">Incrementar visitas (debug)</a>
       </div>
 
@@ -93,6 +95,24 @@ def create_app() -> Flask:
                 )
                 """
             )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS movimentacoes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    produto_id INTEGER NOT NULL,
+                    tipo TEXT NOT NULL CHECK(tipo IN ('entrada', 'saida')),
+                    quantidade INTEGER NOT NULL CHECK(quantidade > 0),
+                    observacao TEXT,
+                    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(produto_id) REFERENCES produtos(id)
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_mov_produto_em ON movimentacoes(produto_id, criado_em DESC)"
+            )
+
             conn.commit()
 
     def get_visitas() -> int:
@@ -115,6 +135,7 @@ def create_app() -> Flask:
         return {"ok": True}
 
     register_products_routes(app, db_path=db_path, base_style=base_style)
+    register_movements_routes(app, db_path=db_path, base_style=base_style)
 
     @app.get("/")
     def index():
