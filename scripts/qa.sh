@@ -14,15 +14,30 @@ if command -v docker >/dev/null 2>&1; then
 fi
 
 cd "$ROOT_DIR/backend"
+LOCAL_DB_PATH="${ROOT_DIR}/data/app.db"
+mkdir -p "$(dirname "$LOCAL_DB_PATH")"
 
 if python -c "import pip" >/dev/null 2>&1; then
   python -m pip install --no-cache-dir -r requirements.txt
   python -m ruff format --check .
   python -m ruff check .
   python -m mypy .
-  python -m pytest
+  DB_PATH="$LOCAL_DB_PATH" python -m pytest
   exit 0
 fi
 
-echo "QA: não foi possível rodar localmente (python sem pip e docker indisponível)." >&2
-exit 0
+if command -v uv >/dev/null 2>&1; then
+  if [ ! -d ".venv" ]; then
+    uv venv -q
+  fi
+
+  uv pip install -q -r requirements.txt
+  uv run ruff format --check .
+  uv run ruff check .
+  uv run mypy .
+  DB_PATH="$LOCAL_DB_PATH" uv run pytest -q
+  exit 0
+fi
+
+echo "QA: não foi possível rodar localmente (docker indisponível, python sem pip e uv ausente)." >&2
+exit 1
