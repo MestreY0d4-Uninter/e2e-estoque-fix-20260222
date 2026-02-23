@@ -223,6 +223,7 @@ def register_products_routes(app: Flask, *, db_path: str, base_style: str) -> No
         <a class="btn" href="{{ url_for('produtos_edit', produto_id=produto.id) }}">Editar</a>
         <a class="btn" href="{{ url_for('movimentacoes_por_produto', produto_id=produto.id) }}">Movimentações</a>
         <a class="btn" href="{{ url_for('movimentacoes_new', produto_id=produto.id) }}">Nova movimentação</a>
+        <a class="btn" href="{{ url_for('estoque_baixo') }}">Estoque baixo</a>
       </div>
 
       <h1>{{ produto.nome }}</h1>

@@ -21,6 +21,7 @@ Acesse:
 - http://localhost:3000 (início)
 - http://localhost:3000/produtos (cadastro/listagem de produtos)
 - http://localhost:3000/movimentacoes (histórico de movimentações)
+- http://localhost:3000/estoque-baixo (relatório de estoque baixo)
 
 Para parar:
 
@@ -54,3 +55,13 @@ cp ./data/app.db ./backup-app.db
 ```
 
 > Dica: pare os containers (`docker compose down`) antes de copiar o arquivo para um backup mais consistente.
+
+## Restaurar
+
+Para restaurar um backup do SQLite, pare o compose e substitua o arquivo:
+
+```bash
+docker compose down
+cp ./backup-app.db ./data/app.db
+docker compose up --build
+```
