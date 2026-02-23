@@ -2,7 +2,7 @@
 
 Aplicação web simples (em português), rodando via **Docker Compose**, com persistência em **SQLite**.
 
-> V1 (escopo): página inicial simples confirmando que o sistema está no ar + exemplo mínimo de persistência no SQLite.
+> V1 (escopo): base do app + cadastro de produtos (CRUD) + persistência no SQLite.
 
 ## Requisitos
 
@@ -18,7 +18,8 @@ docker compose up --build
 
 Acesse:
 
-- http://localhost:3000
+- http://localhost:3000 (início)
+- http://localhost:3000/produtos (cadastro/listagem de produtos)
 
 Para parar:
 
