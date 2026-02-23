@@ -4,6 +4,7 @@ from contextlib import closing
 
 from flask import Flask, redirect, render_template_string, url_for
 
+from csv_ui import register_csv_routes
 from movements_ui import register_movements_routes
 from products_ui import register_products_routes
 
@@ -52,6 +53,7 @@ def create_app() -> Flask:
       <div class="row">
         <a class="btn" href="{{ url_for('produtos_list') }}">Produtos</a>
         <a class="btn" href="{{ url_for('movimentacoes_list') }}">Movimentações</a>
+        <a class="btn" href="{{ url_for('csv_home') }}">CSV</a>
         <a class="btn" href="{{ url_for('incrementar') }}">Incrementar visitas (debug)</a>
       </div>
 
@@ -136,6 +138,7 @@ def create_app() -> Flask:
 
     register_products_routes(app, db_path=db_path, base_style=base_style)
     register_movements_routes(app, db_path=db_path, base_style=base_style)
+    register_csv_routes(app, db_path=db_path, base_style=base_style)
 
     @app.get("/")
     def index():
