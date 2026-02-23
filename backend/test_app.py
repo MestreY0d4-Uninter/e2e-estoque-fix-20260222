@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from contextlib import closing
 
@@ -27,8 +26,6 @@ def test_visitas_persistem(tmp_path, monkeypatch):
     client.get("/incrementar")
 
     with closing(sqlite3.connect(db_path)) as conn:
-        row = conn.execute(
-            "SELECT value FROM app_state WHERE key='visitas'"
-        ).fetchone()
+        row = conn.execute("SELECT value FROM app_state WHERE key='visitas'").fetchone()
         assert row is not None
         assert int(row[0]) == 2
