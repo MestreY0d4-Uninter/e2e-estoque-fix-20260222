@@ -4,12 +4,34 @@ from contextlib import closing
 
 from flask import Flask, redirect, render_template_string, url_for
 
+from products_ui import register_products_routes
+
 
 def create_app() -> Flask:
     app = Flask(__name__)
 
     port = int(os.getenv("PORT", "3000"))
     db_path = os.getenv("DB_PATH", "/data/app.db")
+
+    base_style = """
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 40px; background: #f6f7fb; }
+  .card { max-width: 960px; background: #fff; border: 1px solid #e6e6e6; border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
+  code { background: #f3f4f6; padding: 2px 6px; border-radius: 6px; }
+  a.btn, button.btn { display: inline-block; padding: 10px 14px; border-radius: 10px; border: 1px solid #cfd3da; text-decoration: none; color: #111; background: #fafafa; cursor: pointer; }
+  a.btn:hover, button.btn:hover { background: #f2f2f2; }
+  .muted { color: #666; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .spacer { height: 12px; }
+  input, select { padding: 10px; border-radius: 10px; border: 1px solid #cfd3da; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+  tr.low { background: #fff4f4; }
+  .tag-low { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #ffe5e5; color: #8a1f1f; font-size: 12px; }
+  .error { background: #fff4f4; border: 1px solid #ffd0d0; padding: 10px 12px; border-radius: 12px; }
+  .ok { background: #eefbf2; border: 1px solid #ccefd6; padding: 10px 12px; border-radius: 12px; }
+</style>
+"""
 
     index_template = """
 <!doctype html>
@@ -18,22 +40,21 @@ def create_app() -> Flask:
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Estoque - V1</title>
-    <style>
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 40px; background: #f6f7fb; }
-      .card { max-width: 760px; background: #fff; border: 1px solid #e6e6e6; border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
-      code { background: #f3f4f6; padding: 2px 6px; border-radius: 6px; }
-      a.btn { display: inline-block; margin-top: 10px; padding: 10px 14px; border-radius: 10px; border: 1px solid #cfd3da; text-decoration: none; color: #111; background: #fafafa; }
-      a.btn:hover { background: #f2f2f2; }
-      .muted { color: #666; }
-    </style>
+    {{ base_style | safe }}
   </head>
   <body>
     <div class="card">
       <h1>Sistema de Estoque (V1)</h1>
       <p>Status: <strong>no ar</strong>.</p>
       <p>Banco SQLite: <code>{{ db_path }}</code></p>
+
+      <div class="row">
+        <a class="btn" href="{{ url_for('produtos_list') }}">Produtos</a>
+        <a class="btn" href="{{ url_for('incrementar') }}">Incrementar visitas (debug)</a>
+      </div>
+
+      <div class="spacer"></div>
       <p><strong>Visitas persistidas:</strong> {{ visitas }}</p>
-      <a class="btn" href="{{ url_for('incrementar') }}">Incrementar</a>
       <p class="muted">Dica: incremente, reinicie o <code>docker compose</code> e verifique se o número se mantém.</p>
     </div>
   </body>
@@ -53,6 +74,24 @@ def create_app() -> Flask:
             )
             conn.execute(
                 "INSERT OR IGNORE INTO app_state(key, value) VALUES ('visitas', '0')"
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS produtos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT NOT NULL,
+                    sku TEXT NOT NULL UNIQUE,
+                    categoria TEXT,
+                    fornecedor TEXT,
+                    custo REAL NOT NULL DEFAULT 0,
+                    preco REAL NOT NULL DEFAULT 0,
+                    quantidade_atual INTEGER NOT NULL DEFAULT 0,
+                    estoque_minimo INTEGER NOT NULL DEFAULT 0,
+                    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+                """
             )
             conn.commit()
 
@@ -75,10 +114,15 @@ def create_app() -> Flask:
     def health():
         return {"ok": True}
 
+    register_products_routes(app, db_path=db_path, base_style=base_style)
+
     @app.get("/")
     def index():
         return render_template_string(
-            index_template, db_path=db_path, visitas=get_visitas()
+            index_template,
+            base_style=base_style,
+            db_path=db_path,
+            visitas=get_visitas(),
         )
 
     @app.get("/incrementar")
