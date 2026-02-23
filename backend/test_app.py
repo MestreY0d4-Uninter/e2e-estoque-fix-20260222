@@ -86,3 +86,139 @@ def test_lista_indica_estoque_baixo(tmp_path, monkeypatch):
     res = client.get("/produtos")
     assert res.status_code == 200
     assert b"estoque baixo" in res.data
+
+
+def test_movimentacao_atualiza_quantidade(tmp_path, monkeypatch):
+    db_path = tmp_path / "app.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+
+    app = create_app()
+    client = app.test_client()
+
+    client.post(
+        "/produtos/novo",
+        data={"nome": "Caderno", "sku": "CAD-01", "quantidade_atual": "10"},
+        follow_redirects=True,
+    )
+
+    client.post(
+        "/movimentacoes/nova",
+        data={
+            "produto_id": "1",
+            "tipo": "saida",
+            "quantidade": "3",
+            "observacao": "Venda",
+        },
+        follow_redirects=True,
+    )
+
+    with closing(sqlite3.connect(db_path)) as conn:
+        row = conn.execute(
+            "SELECT quantidade_atual FROM produtos WHERE id=1"
+        ).fetchone()
+        assert row is not None
+        assert int(row[0]) == 7
+
+
+def test_saida_nao_permite_estoque_negativo(tmp_path, monkeypatch):
+    db_path = tmp_path / "app.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+
+    app = create_app()
+    client = app.test_client()
+
+    client.post(
+        "/produtos/novo",
+        data={"nome": "Grampeador", "sku": "GR-01", "quantidade_atual": "2"},
+        follow_redirects=True,
+    )
+
+    res = client.post(
+        "/movimentacoes/nova",
+        data={
+            "produto_id": "1",
+            "tipo": "saida",
+            "quantidade": "5",
+            "observacao": "Teste",
+        },
+        follow_redirects=True,
+    )
+
+    assert res.status_code == 200
+    assert b"estoque ficaria negativo" in res.data
+
+    with closing(sqlite3.connect(db_path)) as conn:
+        row = conn.execute(
+            "SELECT quantidade_atual FROM produtos WHERE id=1"
+        ).fetchone()
+        assert row is not None
+        assert int(row[0]) == 2
+
+
+def test_movimentacao_atualiza_quantidade_e_bloqueia_negativo(tmp_path, monkeypatch):
+    db_path = tmp_path / "app.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+
+    app = create_app()
+    client = app.test_client()
+
+    # cria produto
+    client.post(
+        "/produtos/novo",
+        data={
+            "nome": "Caderno",
+            "sku": "CAD-01",
+            "quantidade_atual": "0",
+            "estoque_minimo": "0",
+        },
+        follow_redirects=True,
+    )
+
+    # captura id
+    with closing(sqlite3.connect(db_path)) as conn:
+        row = conn.execute(
+            "SELECT id, quantidade_atual FROM produtos WHERE sku='CAD-01'"
+        ).fetchone()
+        assert row is not None
+        produto_id = int(row[0])
+        assert int(row[1]) == 0
+
+    # entrada 5
+    r1 = client.post(
+        "/movimentacoes/nova",
+        data={
+            "produto_id": str(produto_id),
+            "tipo": "entrada",
+            "quantidade": "5",
+            "observacao": "compra",
+        },
+        follow_redirects=True,
+    )
+    assert r1.status_code == 200
+    assert b"Movimenta\xc3\xa7\xc3\xa3o registrada" in r1.data
+
+    with closing(sqlite3.connect(db_path)) as conn:
+        row2 = conn.execute(
+            "SELECT quantidade_atual FROM produtos WHERE id=?", (produto_id,)
+        ).fetchone()
+        assert row2 is not None
+        assert int(row2[0]) == 5
+
+    # saída 10 (negativo) deve bloquear
+    r2 = client.post(
+        "/movimentacoes/nova",
+        data={
+            "produto_id": str(produto_id),
+            "tipo": "saida",
+            "quantidade": "10",
+        },
+    )
+    assert r2.status_code == 200
+    assert b"estoque ficaria negativo" in r2.data
+
+    with closing(sqlite3.connect(db_path)) as conn:
+        row3 = conn.execute(
+            "SELECT quantidade_atual FROM produtos WHERE id=?", (produto_id,)
+        ).fetchone()
+        assert row3 is not None
+        assert int(row3[0]) == 5

@@ -20,6 +20,7 @@ Acesse:
 
 - http://localhost:3000 (início)
 - http://localhost:3000/produtos (cadastro/listagem de produtos)
+- http://localhost:3000/movimentacoes (histórico de movimentações)
 
 Para parar:
 
