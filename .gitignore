@@ -4,6 +4,8 @@
 # Python
 **/__pycache__/
 *.pyc
+**/uv.lock
+**/.coverage
 
 # SQLite local (persistência do docker-compose)
 /data/*.db
